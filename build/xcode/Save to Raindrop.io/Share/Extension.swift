@@ -14,7 +14,7 @@ class Extension: NSViewController {
         
         //cancel button
         cancel = NSButton(title: "Cancel", target: nil, action: nil)
-        cancel.keyEquivalent = "\r"
+        cancel.keyEquivalent = "\u{1b}"
         cancel.isHidden = true
         
         //auth view
@@ -29,14 +29,14 @@ class Extension: NSViewController {
         auth.onDone = onAuthDone
         
         //configure webView
-        webView.onClose = onClose
+        webView.onClose = onDone
         webView.onSizeChange = onSizeChange
         webView.onUrlChange = onUrlChange
         webView.onOpenUrl = onOpenUrl
         
         //configure cancel button
         cancel.target = self
-        cancel.action = #selector(onClose)
+        cancel.action = #selector(onCancel)
     }
     
     //extension received items
@@ -115,8 +115,8 @@ class Extension: NSViewController {
         auth.isHidden = !webView.isHidden
         
         if url.absoluteString.contains("/settings") {
-            self.onClose()
             extensionContext?.open(url)
+            onDone()
         }
     }
     
@@ -124,7 +124,13 @@ class Extension: NSViewController {
         extensionContext?.open(url)
     }
     
-    @objc private func onClose() {
+    //window.close() from the web page: bookmark is saved, report success to the host
+    private func onDone() {
+        extensionContext?.completeRequest(returningItems: extensionContext?.inputItems, completionHandler: nil)
+    }
+    
+    //explicit user cancellation (Cancel button / Esc)
+    @objc private func onCancel() {
         extensionContext?.cancelRequest(
             withError: NSError(domain: NSCocoaErrorDomain, code: NSUserCancelledError)
         )
